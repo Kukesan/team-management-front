@@ -1,5 +1,5 @@
 import { http } from '@/lib/http'
-import type { Role, User } from '@/types'
+import type { PagedResult, Role, User } from '@/types'
 
 export interface InviteUserRequest {
   name: string
@@ -8,7 +8,12 @@ export interface InviteUserRequest {
 }
 
 export const usersApi = {
-  list: () => http.get<User[]>('/users').then((r) => r.data),
+  // Backend may return either a raw array or a paged envelope ({ items, ... });
+  // normalize here so every caller can keep treating the result as User[].
+  list: () =>
+    http.get<User[] | PagedResult<User>>('/users').then((r) =>
+      Array.isArray(r.data) ? r.data : r.data.items,
+    ),
 
   invite: (body: InviteUserRequest) => http.post<User>('/users/invite', body).then((r) => r.data),
 

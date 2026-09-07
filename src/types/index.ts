@@ -19,10 +19,22 @@ export interface User {
   createdAt: string
 }
 
+/**
+ * Shape actually returned by /auth/login and /auth/register: `fullName`
+ * instead of `name`, and `roles` as an array instead of a single `role`.
+ * Mapped to `User` in src/api/auth.ts before it touches the rest of the app.
+ */
+export interface AuthUserResponse {
+  id: string
+  fullName: string
+  email: string
+  roles: Role[]
+}
+
 export interface AuthResponse {
   token: string
-  expiresAt: string
-  user: User
+  expiresAtUtc: string
+  user: AuthUserResponse
 }
 
 export interface LoginRequest {
