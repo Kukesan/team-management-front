@@ -1,30 +1,28 @@
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { HoursByType } from '@/types'
+import type { TaskType } from '@/types'
 
-const COLORS: Record<keyof HoursByType, string> = {
-  development: '#2563eb',
-  testing: '#0d9488',
-  meetings: '#d97706',
-  documentation: '#7c3aed',
+const COLORS: Record<TaskType, string> = {
+  Development: '#2563eb',
+  Testing: '#0d9488',
+  Meetings: '#d97706',
+  Documentation: '#7c3aed',
+  CodeReview: '#db2777',
+  Support: '#ea580c',
+  Training: '#65a30d',
+  Other: '#64748b',
 }
 
-const LABELS: Record<keyof HoursByType, string> = {
-  development: 'Development',
-  testing: 'Testing',
-  meetings: 'Meetings',
-  documentation: 'Documentation',
+export interface HoursBreakdownChartEntry {
+  taskType: TaskType
+  hours: number
 }
 
-export function HoursBreakdownChart({ hours }: { hours: HoursByType }) {
-  const data = (Object.keys(LABELS) as (keyof HoursByType)[]).map((key) => ({
-    name: LABELS[key],
-    hours: Number(hours[key]) || 0,
-    fill: COLORS[key],
-  }))
+export function HoursBreakdownChart({ entries }: { entries: HoursBreakdownChartEntry[] }) {
+  const data = entries
+    .filter((e) => e.hours > 0)
+    .map((e) => ({ name: e.taskType, hours: Number(e.hours) || 0, fill: COLORS[e.taskType] }))
 
-  const total = data.reduce((sum, d) => sum + d.hours, 0)
-
-  if (total === 0) {
+  if (data.length === 0) {
     return <p className="text-sm text-slate-400">Enter hours above to preview the breakdown.</p>
   }
 

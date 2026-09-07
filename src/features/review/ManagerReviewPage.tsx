@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { ReportDetailView } from '@/features/reports/ReportDetailView'
-import type { ApiError, WeeklyReport } from '@/types'
+import type { ApiError, ReviewActionRequest, WeeklyReport } from '@/types'
 
 export function ManagerReviewPage() {
   const { id } = useParams<{ id: string }>()
@@ -36,11 +36,11 @@ export function ManagerReviewPage() {
   })
 
   const reviewMutation = useMutation({
-    mutationFn: (body: { action: 'Approve' | 'RequestChanges'; comment?: string }) => reportsApi.review(id!, body),
+    mutationFn: (body: ReviewActionRequest) => reportsApi.review(id!, body),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['reports'] })
       toast({
-        title: variables.action === 'Approve' ? 'Report approved' : 'Changes requested',
+        title: variables.action === 'Approved' ? 'Report approved' : 'Changes requested',
         variant: 'success',
       })
       navigate('/review')
@@ -50,7 +50,7 @@ export function ManagerReviewPage() {
 
   const handleRequestChanges = () => {
     if (comment.trim().length < 3) return
-    reviewMutation.mutate({ action: 'RequestChanges', comment: comment.trim() })
+    reviewMutation.mutate({ action: 'RequestedChanges', comment: comment.trim() })
   }
 
   if (isLoading) {
@@ -127,7 +127,7 @@ export function ManagerReviewPage() {
 
             <Button
               variant="success"
-              onClick={() => reviewMutation.mutate({ action: 'Approve' })}
+              onClick={() => reviewMutation.mutate({ action: 'Approved' })}
               isLoading={reviewMutation.isPending}
             >
               <Check className="h-4 w-4" />

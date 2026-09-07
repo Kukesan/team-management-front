@@ -32,7 +32,7 @@ export function ReviewQueuePage() {
 
   const columns = useMemo<ColumnDef<WeeklyReportSummary, any>[]>(
     () => [
-      { header: 'Member', accessorKey: 'userName', meta: { filterPlaceholder: 'Filter by member...' } },
+      { header: 'Member', accessorKey: 'userFullName', meta: { filterPlaceholder: 'Filter by member...' } },
       { header: 'Project', accessorKey: 'projectName' },
       { header: 'Week', accessorFn: (row) => formatDateRange(row.weekStartDate, row.weekEndDate) },
       { header: 'Status', accessorKey: 'status', cell: ({ row }) => <StatusBadge status={row.original.status} /> },

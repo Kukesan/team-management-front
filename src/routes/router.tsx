@@ -5,7 +5,7 @@ import { AppLayout } from '@/routes/AppLayout'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
 import { RoleRoute } from '@/routes/RoleRoute'
 import { HomeRedirect } from '@/routes/HomeRedirect'
-import { NotFoundPage, ForbiddenPage } from '@/components/ErrorState'
+import { NotFoundPage, ForbiddenPage, RouteErrorBoundary } from '@/components/ErrorState'
 import { ReportHistoryPage } from '@/features/reports/ReportHistoryPage'
 import { ReportFormPage } from '@/features/reports/ReportFormPage'
 import { ReportDetailPage } from '@/features/reports/ReportDetailPage'
@@ -17,13 +17,15 @@ import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { UsersPage } from '@/features/users/UsersPage'
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
-  { path: '/register', element: <RegisterPage /> },
+  { path: '/login', element: <LoginPage />, errorElement: <RouteErrorBoundary /> },
+  { path: '/register', element: <RegisterPage />, errorElement: <RouteErrorBoundary /> },
   {
     element: <ProtectedRoute />,
+    errorElement: <RouteErrorBoundary />,
     children: [
       {
         element: <AppLayout />,
+        errorElement: <RouteErrorBoundary />,
         children: [
           { index: true, element: <HomeRedirect /> },
           { path: 'reports', element: <ReportHistoryPage /> },

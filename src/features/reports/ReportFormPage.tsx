@@ -11,7 +11,6 @@ import { queryKeys } from '@/lib/queryClient'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,37 +21,39 @@ import { RepeatableList } from '@/components/RepeatableList'
 import { HoursBreakdownChart } from '@/features/reports/HoursBreakdownChart'
 import { emptyReportForm, reportFormSchema, type ReportFormValues } from '@/features/reports/schemas'
 import { formatDate, formatEnumLabel } from '@/lib/format'
-import type { ApiError, HoursByType, SaveReportRequest, WeeklyReport } from '@/types'
+import type { ApiError, UpdateReportRequest, WeeklyReport } from '@/types'
 
-const PRIORITIES = ['Low', 'Medium', 'High'] as const
-const TASK_STATUSES = ['NotStarted', 'InProgress', 'Completed', 'Blocked'] as const
+const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'] as const
+const TASK_STATUSES = ['NotStarted', 'InProgress', 'Completed', 'Blocked', 'Deferred'] as const
+const HOURS_TASK_TYPES = [
+  'Development',
+  'Testing',
+  'Meetings',
+  'Documentation',
+  'CodeReview',
+  'Support',
+  'Training',
+  'Other',
+] as const
 
 function toFormValues(report: WeeklyReport): ReportFormValues {
   return {
     projectId: report.projectId,
     weekStartDate: report.weekStartDate.slice(0, 10),
     weekEndDate: report.weekEndDate.slice(0, 10),
-    tasks: report.tasks,
-    nextWeekTasks: report.nextWeekTasks.map((value) => ({ id: crypto.randomUUID(), value })),
-    blockers: report.blockers,
-    achievements: report.achievements,
-    hoursByType: report.hoursByType,
-    notes: report.notes ?? '',
+    tasks: (report.taskItems ?? []).map((t) => ({ ...t, output: t.output ?? '' })),
+    blockers: (report.blockers ?? []).map((b) => ({ ...b, description: b.description ?? '' })),
+    achievements: (report.achievements ?? []).map((a) => ({ ...a, description: a.description ?? '' })),
+    hoursBreakdown: report.hoursBreakdown ?? [],
   }
 }
 
-function toSaveRequest(values: ReportFormValues, id?: string): SaveReportRequest {
+function toUpdateRequest(values: ReportFormValues): UpdateReportRequest {
   return {
-    id,
-    projectId: values.projectId,
-    weekStartDate: values.weekStartDate,
-    weekEndDate: values.weekEndDate,
-    tasks: values.tasks,
-    nextWeekTasks: values.nextWeekTasks.map((t) => t.value),
-    blockers: values.blockers,
-    achievements: values.achievements,
-    hoursByType: values.hoursByType,
-    notes: values.notes || null,
+    taskItems: values.tasks.map(({ id: _id, ...rest }) => rest),
+    blockers: values.blockers.map(({ id: _id, ...rest }) => rest),
+    achievements: values.achievements.map(({ id: _id, ...rest }) => rest),
+    hoursBreakdown: values.hoursBreakdown.map(({ id: _id, ...rest }) => rest),
   }
 }
 
@@ -100,18 +101,32 @@ export function ReportFormPage() {
   }, [report, reset])
 
   const tasksArray = useFieldArray({ control, name: 'tasks' })
-  const nextWeekArray = useFieldArray({ control, name: 'nextWeekTasks' })
   const blockersArray = useFieldArray({ control, name: 'blockers' })
   const achievementsArray = useFieldArray({ control, name: 'achievements' })
+  const hoursArray = useFieldArray({ control, name: 'hoursBreakdown' })
 
-  const hoursByType = watch('hoursByType')
+  const hoursBreakdown = watch('hoursBreakdown')
 
   const invalidateReportQueries = () => {
     queryClient.invalidateQueries({ queryKey: ['reports'] })
   }
 
+  /** Persists form content: creates the draft shell first if this is a brand-new report. */
+  const persistDraft = async (values: ReportFormValues): Promise<WeeklyReport> => {
+    const reportId =
+      id ??
+      (
+        await reportsApi.create({
+          projectId: values.projectId,
+          weekStartDate: values.weekStartDate,
+          weekEndDate: values.weekEndDate,
+        })
+      ).id
+    return reportsApi.update(reportId, toUpdateRequest(values))
+  }
+
   const draftMutation = useMutation({
-    mutationFn: reportsApi.saveDraft,
+    mutationFn: persistDraft,
     onSuccess: (saved) => {
       invalidateReportQueries()
       toast({ title: 'Draft saved', variant: 'success' })
@@ -121,7 +136,10 @@ export function ReportFormPage() {
   })
 
   const submitMutation = useMutation({
-    mutationFn: reportsApi.submit,
+    mutationFn: async (values: ReportFormValues) => {
+      const saved = await persistDraft(values)
+      return reportsApi.submit(saved.id)
+    },
     onSuccess: (saved) => {
       invalidateReportQueries()
       toast({ title: 'Report submitted', variant: 'success' })
@@ -133,15 +151,14 @@ export function ReportFormPage() {
   const handleSaveDraft = async () => {
     setDraftSaving(true)
     try {
-      const values = watch()
-      await draftMutation.mutateAsync(toSaveRequest(values, id))
+      await draftMutation.mutateAsync(watch())
     } finally {
       setDraftSaving(false)
     }
   }
 
   const onSubmit = (values: ReportFormValues) => {
-    submitMutation.mutate(toSaveRequest(values, id))
+    submitMutation.mutate(values)
   }
 
   const toggleBlockerKey = (index: number) => {
@@ -168,6 +185,7 @@ export function ReportFormPage() {
   }
 
   const canEdit = !report || report.status === 'Draft' || report.status === 'NeedsCorrection'
+  const latestReview = (report?.reviews ?? []).slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-24">
@@ -178,14 +196,14 @@ export function ReportFormPage() {
         <p className="text-sm text-slate-500">Fill in your tasks, blockers, and achievements for the week.</p>
       </div>
 
-      {report?.status === 'NeedsCorrection' && report.latestComment && (
+      {report?.status === 'NeedsCorrection' && latestReview?.comment && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
           <div>
             <p className="text-sm font-semibold text-amber-900">Your manager requested changes</p>
-            <p className="mt-1 text-sm text-amber-800">{report.latestComment.comment}</p>
+            <p className="mt-1 text-sm text-amber-800">{latestReview.comment}</p>
             <p className="mt-1 text-xs text-amber-700">
-              — {report.latestComment.reviewerName}, {formatDate(report.latestComment.createdAt)}
+              — {latestReview.reviewerFullName}, {formatDate(latestReview.createdAt)}
             </p>
           </div>
         </div>
@@ -206,12 +224,12 @@ export function ReportFormPage() {
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="weekStartDate">Week start</Label>
-              <Input id="weekStartDate" type="date" {...register('weekStartDate')} />
+              <Input id="weekStartDate" type="date" {...register('weekStartDate')} disabled={isEdit} />
               {errors.weekStartDate && <p className="text-xs text-red-600">{errors.weekStartDate.message}</p>}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="weekEndDate">Week end</Label>
-              <Input id="weekEndDate" type="date" {...register('weekEndDate')} />
+              <Input id="weekEndDate" type="date" {...register('weekEndDate')} disabled={isEdit} />
               {errors.weekEndDate && <p className="text-xs text-red-600">{errors.weekEndDate.message}</p>}
             </div>
             <div className="space-y-1.5">
@@ -220,7 +238,7 @@ export function ReportFormPage() {
                 control={control}
                 name="projectId"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange} disabled={isLoadingProjects}>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={isLoadingProjects || isEdit}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a project" />
                     </SelectTrigger>
@@ -250,13 +268,13 @@ export function ReportFormPage() {
               onAddRow={() =>
                 tasksArray.append({
                   id: crypto.randomUUID(),
-                  name: '',
+                  taskName: '',
                   priority: 'Medium',
                   plannedPercent: 0,
                   actualPercent: 0,
                   status: 'NotStarted',
-                  plannedHours: 0,
-                  actualHours: 0,
+                  timePlannedHours: 0,
+                  timeSpentHours: 0,
                   output: '',
                 })
               }
@@ -264,10 +282,10 @@ export function ReportFormPage() {
               addLabel="Add task"
               columns={[
                 {
-                  key: 'name',
+                  key: 'taskName',
                   label: 'Task',
                   className: 'min-w-[160px]',
-                  render: (i) => <Input {...register(`tasks.${i}.name`)} placeholder="Task name" />,
+                  render: (i) => <Input {...register(`tasks.${i}.taskName`)} placeholder="Task name" />,
                 },
                 {
                   key: 'priority',
@@ -332,17 +350,17 @@ export function ReportFormPage() {
                   ),
                 },
                 {
-                  key: 'plannedHours',
+                  key: 'timePlannedHours',
                   label: 'Planned h',
                   render: (i) => (
-                    <Input type="number" min={0} step={0.5} className="w-20" {...register(`tasks.${i}.plannedHours`, { valueAsNumber: true })} />
+                    <Input type="number" min={0} step={0.5} className="w-20" {...register(`tasks.${i}.timePlannedHours`, { valueAsNumber: true })} />
                   ),
                 },
                 {
-                  key: 'actualHours',
+                  key: 'timeSpentHours',
                   label: 'Actual h',
                   render: (i) => (
-                    <Input type="number" min={0} step={0.5} className="w-20" {...register(`tasks.${i}.actualHours`, { valueAsNumber: true })} />
+                    <Input type="number" min={0} step={0.5} className="w-20" {...register(`tasks.${i}.timeSpentHours`, { valueAsNumber: true })} />
                   ),
                 },
                 {
@@ -359,28 +377,14 @@ export function ReportFormPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Planned for next week</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RepeatableList
-              ids={nextWeekArray.fields.map((f) => f.id)}
-              onAdd={() => nextWeekArray.append({ id: crypto.randomUUID(), value: '' })}
-              onRemove={(i) => nextWeekArray.remove(i)}
-              addLabel="Add task"
-              emptyHint="No tasks planned yet."
-              renderItem={(i) => <Input {...register(`nextWeekTasks.${i}.value`)} placeholder="Upcoming task" />}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>Blockers / challenges</CardTitle>
           </CardHeader>
           <CardContent>
             <RepeatableList
               ids={blockersArray.fields.map((f) => f.id)}
-              onAdd={() => blockersArray.append({ id: crypto.randomUUID(), description: '', isKeyIssue: false })}
+              onAdd={() =>
+                blockersArray.append({ id: crypto.randomUUID(), description: '', isKeyIssue: false, isResolved: false })
+              }
               onRemove={(i) => blockersArray.remove(i)}
               addLabel="Add blocker"
               emptyHint="No blockers reported."
@@ -393,6 +397,13 @@ export function ReportFormPage() {
                       onCheckedChange={() => toggleBlockerKey(i)}
                     />
                     Key issue
+                  </label>
+                  <label className="flex shrink-0 items-center gap-1.5 text-xs text-slate-600">
+                    <Switch
+                      checked={watch(`blockers.${i}.isResolved`)}
+                      onCheckedChange={(checked) => setValue(`blockers.${i}.isResolved`, checked, { shouldDirty: true })}
+                    />
+                    Resolved
                   </label>
                 </div>
               )}
@@ -434,26 +445,43 @@ export function ReportFormPage() {
             <CardTitle>Hours by task type (optional)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {(Object.keys(hoursByType) as (keyof HoursByType)[]).map((key) => (
-                <div key={key} className="space-y-1.5">
-                  <Label htmlFor={`hours-${key}`} className="capitalize">
-                    {key}
-                  </Label>
-                  <Input id={`hours-${key}`} type="number" min={0} step={0.5} {...register(`hoursByType.${key}`, { valueAsNumber: true })} />
+            <RepeatableList
+              ids={hoursArray.fields.map((f) => f.id)}
+              onAdd={() => hoursArray.append({ id: crypto.randomUUID(), taskType: 'Development', hours: 0 })}
+              onRemove={(i) => hoursArray.remove(i)}
+              addLabel="Add hours entry"
+              emptyHint="No hours logged yet."
+              renderItem={(i) => (
+                <div className="flex items-center gap-3">
+                  <Controller
+                    control={control}
+                    name={`hoursBreakdown.${i}.taskType`}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {HOURS_TASK_TYPES.map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {formatEnumLabel(t)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    className="w-24"
+                    {...register(`hoursBreakdown.${i}.hours`, { valueAsNumber: true })}
+                  />
                 </div>
-              ))}
-            </div>
-            <HoursBreakdownChart hours={hoursByType} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes / links (optional)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea rows={3} placeholder="Any additional context or links" {...register('notes')} />
+              )}
+            />
+            <HoursBreakdownChart entries={hoursBreakdown} />
           </CardContent>
         </Card>
       </fieldset>

@@ -1,9 +1,12 @@
 import { http } from '@/lib/http'
 import type {
+  CreateReportRequest,
+  PagedResult,
   ReportStatus,
-  ReportVersion,
+  ReportVersionDetail,
+  ReportVersionSummary,
   ReviewActionRequest,
-  SaveReportRequest,
+  UpdateReportRequest,
   WeeklyReport,
   WeeklyReportSummary,
 } from '@/types'
@@ -19,26 +22,28 @@ export interface ListReportsParams {
 export const reportsApi = {
   /** Current user's own reports. */
   listMine: (params?: ListReportsParams) =>
-    http.get<WeeklyReportSummary[]>('/reports/mine', { params }).then((r) => r.data),
+    http.get<PagedResult<WeeklyReportSummary>>('/reports/mine', { params }).then((r) => r.data.items),
 
   /** Manager/Admin view across the team. */
   listTeam: (params?: ListReportsParams) =>
-    http.get<WeeklyReportSummary[]>('/reports', { params }).then((r) => r.data),
+    http.get<PagedResult<WeeklyReportSummary>>('/reports', { params }).then((r) => r.data.items),
 
   get: (id: string) => http.get<WeeklyReport>(`/reports/${id}`).then((r) => r.data),
 
   versions: (id: string) =>
-    http.get<ReportVersion[]>(`/reports/${id}/versions`).then((r) => r.data),
+    http.get<ReportVersionSummary[]>(`/reports/${id}/versions`).then((r) => r.data),
 
-  saveDraft: (body: SaveReportRequest) =>
-    body.id
-      ? http.put<WeeklyReport>(`/reports/${body.id}`, { ...body, status: 'Draft' }).then((r) => r.data)
-      : http.post<WeeklyReport>('/reports', { ...body, status: 'Draft' }).then((r) => r.data),
+  version: (id: string, versionId: string) =>
+    http.get<ReportVersionDetail>(`/reports/${id}/versions/${versionId}`).then((r) => r.data),
 
-  submit: (body: SaveReportRequest) =>
-    body.id
-      ? http.put<WeeklyReport>(`/reports/${body.id}/submit`, body).then((r) => r.data)
-      : http.post<WeeklyReport>('/reports/submit', body).then((r) => r.data),
+  /** Creates the empty draft shell for a new week/project. */
+  create: (body: CreateReportRequest) => http.post<WeeklyReport>('/reports', body).then((r) => r.data),
+
+  /** Saves task/blocker/achievement/hours content against an existing draft. */
+  update: (id: string, body: UpdateReportRequest) =>
+    http.put<WeeklyReport>(`/reports/${id}`, body).then((r) => r.data),
+
+  submit: (id: string) => http.post<WeeklyReport>(`/reports/${id}/submit`).then((r) => r.data),
 
   review: (id: string, body: ReviewActionRequest) =>
     http.post<WeeklyReport>(`/reports/${id}/review`, body).then((r) => r.data),

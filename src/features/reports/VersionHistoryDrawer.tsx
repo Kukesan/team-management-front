@@ -8,13 +8,21 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
 import { formatDate } from '@/lib/format'
+import type { ReportReview } from '@/types'
 
-export function VersionHistoryDrawer({ reportId }: { reportId: string }) {
+export function VersionHistoryDrawer({ reportId, reviews }: { reportId: string; reviews: ReportReview[] }) {
   const { data, isLoading, isFetched, refetch } = useQuery({
     queryKey: queryKeys.reports.versions(reportId),
     queryFn: () => reportsApi.versions(reportId),
     enabled: false,
   })
+
+  const reviewsByVersion = new Map<number, ReportReview[]>()
+  for (const review of reviews) {
+    const list = reviewsByVersion.get(review.reportVersionNumber) ?? []
+    list.push(review)
+    reviewsByVersion.set(review.reportVersionNumber, list)
+  }
 
   return (
     <Dialog onOpenChange={(open) => open && !isFetched && refetch()}>
@@ -45,29 +53,37 @@ export function VersionHistoryDrawer({ reportId }: { reportId: string }) {
             {data
               .slice()
               .sort((a, b) => b.versionNumber - a.versionNumber)
-              .map((version) => (
-                <li key={version.versionNumber} className="rounded-lg border border-slate-200 p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-900">Version {version.versionNumber}</span>
-                    <span className="text-xs text-slate-500">{formatDate(version.createdAt, 'MMM d, yyyy p')}</span>
-                  </div>
-                  {version.comment ? (
-                    <div className="mt-2 flex items-start justify-between gap-2 rounded-md bg-slate-50 p-2">
-                      <div>
-                        <Badge variant={version.comment.action === 'Approved' ? 'success' : 'warning'}>
-                          {version.comment.action === 'Approved' ? 'Approved' : 'Changes requested'}
-                        </Badge>
-                        {version.comment.comment && (
-                          <p className="mt-1 text-sm text-slate-600">{version.comment.comment}</p>
-                        )}
-                      </div>
-                      <span className="shrink-0 text-xs text-slate-400">{version.comment.reviewerName}</span>
+              .map((version) => {
+                const versionReviews = reviewsByVersion.get(version.versionNumber) ?? []
+                return (
+                  <li key={version.versionNumber} className="rounded-lg border border-slate-200 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-900">Version {version.versionNumber}</span>
+                      <span className="text-xs text-slate-500">
+                        {formatDate(version.submittedAt, 'MMM d, yyyy p')}
+                      </span>
                     </div>
-                  ) : (
-                    <p className="mt-1 text-xs text-slate-400">No review comment against this version.</p>
-                  )}
-                </li>
-              ))}
+                    {versionReviews.length === 0 ? (
+                      <p className="mt-1 text-xs text-slate-400">No review comment against this version.</p>
+                    ) : (
+                      versionReviews.map((review) => (
+                        <div
+                          key={review.id}
+                          className="mt-2 flex items-start justify-between gap-2 rounded-md bg-slate-50 p-2"
+                        >
+                          <div>
+                            <Badge variant={review.action === 'Approved' ? 'success' : 'warning'}>
+                              {review.action === 'Approved' ? 'Approved' : 'Changes requested'}
+                            </Badge>
+                            {review.comment && <p className="mt-1 text-sm text-slate-600">{review.comment}</p>}
+                          </div>
+                          <span className="shrink-0 text-xs text-slate-400">{review.reviewerFullName}</span>
+                        </div>
+                      ))
+                    )}
+                  </li>
+                )
+              })}
           </ol>
         )}
       </DialogContent>

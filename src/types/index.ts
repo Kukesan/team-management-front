@@ -58,26 +58,44 @@ export interface Project {
 
 export type ReportStatus = 'Draft' | 'Submitted' | 'NeedsCorrection' | 'Approved'
 
-export type TaskPriority = 'Low' | 'Medium' | 'High'
+export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical'
 
-export type TaskStatus = 'NotStarted' | 'InProgress' | 'Completed' | 'Blocked'
+export type TaskStatus = 'NotStarted' | 'InProgress' | 'Completed' | 'Blocked' | 'Deferred'
 
 export interface ReportTask {
   id: string
-  name: string
+  taskName: string
   priority: TaskPriority
   plannedPercent: number
   actualPercent: number
   status: TaskStatus
-  plannedHours: number
-  actualHours: number
-  output: string
+  timePlannedHours: number
+  timeSpentHours: number
+  output: string | null
+}
+
+export interface TaskItemRequest {
+  taskName: string
+  priority: TaskPriority
+  plannedPercent: number
+  actualPercent: number
+  status: TaskStatus
+  timePlannedHours: number
+  timeSpentHours: number
+  output: string | null
 }
 
 export interface BlockerItem {
   id: string
   description: string
   isKeyIssue: boolean
+  isResolved: boolean
+}
+
+export interface BlockerRequest {
+  description: string
+  isKeyIssue: boolean
+  isResolved: boolean
 }
 
 export interface AchievementItem {
@@ -86,76 +104,104 @@ export interface AchievementItem {
   isKeyAchievement: boolean
 }
 
-export type TaskType = 'Development' | 'Testing' | 'Meetings' | 'Documentation'
-
-export interface HoursByType {
-  development: number
-  testing: number
-  meetings: number
-  documentation: number
+export interface AchievementRequest {
+  description: string
+  isKeyAchievement: boolean
 }
 
-export interface ReviewComment {
+export type TaskType =
+  | 'Development'
+  | 'Testing'
+  | 'Meetings'
+  | 'Documentation'
+  | 'CodeReview'
+  | 'Support'
+  | 'Training'
+  | 'Other'
+
+export interface HoursBreakdownItem {
   id: string
-  reportId: string
-  versionNumber: number
-  action: 'Approved' | 'RequestedChanges'
-  comment: string | null
+  taskType: TaskType
+  hours: number
+}
+
+export interface HoursBreakdownRequest {
+  taskType: TaskType
+  hours: number
+}
+
+export type ReviewAction = 'Approved' | 'RequestedChanges'
+
+export interface ReportReview {
+  id: string
+  reportVersionNumber: number
   reviewerId: string
-  reviewerName: string
+  reviewerFullName: string
+  action: ReviewAction
+  comment: string | null
   createdAt: string
 }
 
-export interface ReportVersion {
+export interface ReportVersionSummary {
+  id: string
   versionNumber: number
-  createdAt: string
-  content: WeeklyReportContent
-  comment: ReviewComment | null
+  submittedAt: string
 }
 
-export interface WeeklyReportContent {
-  projectId: string
-  weekStartDate: string
-  weekEndDate: string
-  tasks: ReportTask[]
-  nextWeekTasks: string[]
+export interface ReportVersionDetail extends ReportVersionSummary {
+  taskItems: ReportTask[]
   blockers: BlockerItem[]
   achievements: AchievementItem[]
-  hoursByType: HoursByType
-  notes: string | null
+  hoursBreakdown: HoursBreakdownItem[]
 }
 
-export interface WeeklyReport extends WeeklyReportContent {
+export interface WeeklyReport {
   id: string
   userId: string
-  userName: string
+  userFullName: string
+  projectId: string
   projectName: string
+  weekStartDate: string
+  weekEndDate: string
   status: ReportStatus
-  currentVersion: number
-  latestComment: ReviewComment | null
+  currentVersionNumber: number
   createdAt: string
   updatedAt: string
-  submittedAt: string | null
+  taskItems: ReportTask[]
+  blockers: BlockerItem[]
+  achievements: AchievementItem[]
+  hoursBreakdown: HoursBreakdownItem[]
+  reviews: ReportReview[]
 }
 
 export interface WeeklyReportSummary {
   id: string
   userId: string
-  userName: string
+  userFullName: string
   projectId: string
   projectName: string
   weekStartDate: string
   weekEndDate: string
   status: ReportStatus
-  submittedAt: string | null
+  currentVersionNumber: number
+  updatedAt: string
 }
 
-export interface SaveReportRequest extends WeeklyReportContent {
-  id?: string
+export interface CreateReportRequest {
+  projectId: string
+  weekStartDate: string
+  weekEndDate: string
+}
+
+export interface UpdateReportRequest {
+  taskItems: TaskItemRequest[]
+  blockers: BlockerRequest[]
+  achievements: AchievementRequest[]
+  hoursBreakdown: HoursBreakdownRequest[]
 }
 
 export interface ReviewActionRequest {
-  action: 'Approve' | 'RequestChanges'
+  action: ReviewAction
   comment?: string
 }
 

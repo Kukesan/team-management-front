@@ -12,28 +12,31 @@ const TASK_STATUS_VARIANT = {
   InProgress: 'brand',
   Completed: 'success',
   Blocked: 'danger',
+  Deferred: 'default',
 } as const
 
 export function ReportDetailView({ report }: { report: WeeklyReport }) {
+  const latestReview = (report.reviews ?? []).slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0]
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">{report.userName}</h1>
+          <h1 className="text-xl font-semibold text-slate-900">{report.userFullName}</h1>
           <p className="text-sm text-slate-500">
             {report.projectName} &middot; {formatDateRange(report.weekStartDate, report.weekEndDate)}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={report.status} />
-          <VersionHistoryDrawer reportId={report.id} />
+          <VersionHistoryDrawer reportId={report.id} reviews={report.reviews ?? []} />
         </div>
       </div>
 
-      {report.status === 'NeedsCorrection' && report.latestComment && (
+      {report.status === 'NeedsCorrection' && latestReview?.comment && (
         <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           <p className="font-semibold">Manager feedback</p>
-          <p className="mt-1">{report.latestComment.comment}</p>
+          <p className="mt-1">{latestReview.comment}</p>
         </div>
       )}
 
@@ -56,10 +59,10 @@ export function ReportDetailView({ report }: { report: WeeklyReport }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {report.tasks.map((task) => (
+              {(report.taskItems ?? []).map((task) => (
                 <tr key={task.id}>
                   <td data-label="Task" className="py-2 pr-3 font-medium text-slate-900">
-                    {task.name}
+                    {task.taskName}
                   </td>
                   <td data-label="Priority" className="py-2 pr-3">
                     {task.priority}
@@ -74,10 +77,10 @@ export function ReportDetailView({ report }: { report: WeeklyReport }) {
                     <Badge variant={TASK_STATUS_VARIANT[task.status]}>{formatEnumLabel(task.status)}</Badge>
                   </td>
                   <td data-label="Planned h" className="py-2 pr-3">
-                    {formatHours(task.plannedHours)}
+                    {formatHours(task.timePlannedHours)}
                   </td>
                   <td data-label="Actual h" className="py-2 pr-3">
-                    {formatHours(task.actualHours)}
+                    {formatHours(task.timeSpentHours)}
                   </td>
                   <td data-label="Output" className="py-2 text-slate-600">
                     {task.output || '—'}
@@ -92,31 +95,14 @@ export function ReportDetailView({ report }: { report: WeeklyReport }) {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Planned for next week</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {report.nextWeekTasks.length === 0 ? (
-              <p className="text-sm text-slate-400">Nothing planned yet.</p>
-            ) : (
-              <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
-                {report.nextWeekTasks.map((t, i) => (
-                  <li key={i}>{t}</li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>Blockers / challenges</CardTitle>
           </CardHeader>
           <CardContent>
-            {report.blockers.length === 0 ? (
+            {(report.blockers ?? []).length === 0 ? (
               <p className="text-sm text-slate-400">No blockers reported.</p>
             ) : (
               <ul className="space-y-1.5 text-sm text-slate-700">
-                {report.blockers.map((b) => (
+                {(report.blockers ?? []).map((b) => (
                   <li key={b.id} className="flex items-start gap-1.5">
                     {b.isKeyIssue && <Flag className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />}
                     <span className={b.isKeyIssue ? 'font-medium text-red-700' : undefined}>{b.description}</span>
@@ -132,11 +118,11 @@ export function ReportDetailView({ report }: { report: WeeklyReport }) {
             <CardTitle>Achievements</CardTitle>
           </CardHeader>
           <CardContent>
-            {report.achievements.length === 0 ? (
+            {(report.achievements ?? []).length === 0 ? (
               <p className="text-sm text-slate-400">No achievements logged.</p>
             ) : (
               <ul className="space-y-1.5 text-sm text-slate-700">
-                {report.achievements.map((a) => (
+                {(report.achievements ?? []).map((a) => (
                   <li key={a.id} className="flex items-start gap-1.5">
                     {a.isKeyAchievement && <Flag className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />}
                     <span className={a.isKeyAchievement ? 'font-medium text-emerald-700' : undefined}>
@@ -154,21 +140,10 @@ export function ReportDetailView({ report }: { report: WeeklyReport }) {
             <CardTitle>Hours by task type</CardTitle>
           </CardHeader>
           <CardContent>
-            <HoursBreakdownChart hours={report.hoursByType} />
+            <HoursBreakdownChart entries={report.hoursBreakdown ?? []} />
           </CardContent>
         </Card>
       </div>
-
-      {report.notes && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="whitespace-pre-wrap text-sm text-slate-700">{report.notes}</p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

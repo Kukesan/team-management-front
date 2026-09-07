@@ -2,25 +2,21 @@ import { z } from 'zod'
 
 export const taskSchema = z.object({
   id: z.string(),
-  name: z.string().min(1, 'Task name is required'),
-  priority: z.enum(['Low', 'Medium', 'High']),
+  taskName: z.string().min(1, 'Task name is required'),
+  priority: z.enum(['Low', 'Medium', 'High', 'Critical']),
   plannedPercent: z.number().min(0, 'Min 0').max(100, 'Max 100'),
   actualPercent: z.number().min(0, 'Min 0').max(100, 'Max 100'),
-  status: z.enum(['NotStarted', 'InProgress', 'Completed', 'Blocked']),
-  plannedHours: z.number().min(0, 'Min 0'),
-  actualHours: z.number().min(0, 'Min 0'),
+  status: z.enum(['NotStarted', 'InProgress', 'Completed', 'Blocked', 'Deferred']),
+  timePlannedHours: z.number().min(0, 'Min 0'),
+  timeSpentHours: z.number().min(0, 'Min 0'),
   output: z.string(),
-})
-
-export const nextWeekTaskSchema = z.object({
-  id: z.string(),
-  value: z.string().min(1, 'Required'),
 })
 
 export const blockerSchema = z.object({
   id: z.string(),
   description: z.string().min(1, 'Required'),
   isKeyIssue: z.boolean(),
+  isResolved: z.boolean(),
 })
 
 export const achievementSchema = z.object({
@@ -29,21 +25,29 @@ export const achievementSchema = z.object({
   isKeyAchievement: z.boolean(),
 })
 
+export const hoursBreakdownSchema = z.object({
+  id: z.string(),
+  taskType: z.enum([
+    'Development',
+    'Testing',
+    'Meetings',
+    'Documentation',
+    'CodeReview',
+    'Support',
+    'Training',
+    'Other',
+  ]),
+  hours: z.number().min(0, 'Min 0'),
+})
+
 export const reportFormSchema = z.object({
   projectId: z.string().min(1, 'Select a project'),
   weekStartDate: z.string().min(1, 'Required'),
   weekEndDate: z.string().min(1, 'Required'),
   tasks: z.array(taskSchema).min(1, 'Add at least one task'),
-  nextWeekTasks: z.array(nextWeekTaskSchema),
   blockers: z.array(blockerSchema),
   achievements: z.array(achievementSchema),
-  hoursByType: z.object({
-    development: z.number().min(0),
-    testing: z.number().min(0),
-    meetings: z.number().min(0),
-    documentation: z.number().min(0),
-  }),
-  notes: z.string().optional(),
+  hoursBreakdown: z.array(hoursBreakdownSchema),
 })
 
 export type ReportFormValues = z.infer<typeof reportFormSchema>
@@ -56,20 +60,18 @@ export function emptyReportForm(weekStartDate: string, weekEndDate: string): Rep
     tasks: [
       {
         id: crypto.randomUUID(),
-        name: '',
+        taskName: '',
         priority: 'Medium',
         plannedPercent: 0,
         actualPercent: 0,
         status: 'NotStarted',
-        plannedHours: 0,
-        actualHours: 0,
+        timePlannedHours: 0,
+        timeSpentHours: 0,
         output: '',
       },
     ],
-    nextWeekTasks: [],
     blockers: [],
     achievements: [],
-    hoursByType: { development: 0, testing: 0, meetings: 0, documentation: 0 },
-    notes: '',
+    hoursBreakdown: [],
   }
 }

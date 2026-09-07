@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useRouteError } from 'react-router-dom'
 import { AlertTriangle, ShieldOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -39,6 +39,21 @@ export function ForbiddenPage() {
       icon="forbidden"
       title="You don't have access to this page"
       description="This area is restricted to managers and admins. If you think this is a mistake, contact your manager."
+    />
+  )
+}
+
+export function RouteErrorBoundary() {
+  const error = useRouteError()
+  if (import.meta.env.DEV) {
+    console.error(error)
+  }
+
+  return (
+    <ErrorState
+      icon="notfound"
+      title="Something went wrong"
+      description="This page ran into an unexpected error. Try going back to the dashboard, and let us know if it keeps happening."
     />
   )
 }
