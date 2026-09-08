@@ -38,4 +38,7 @@ export const queryKeys = {
     timeByTaskType: (filters?: unknown) => ['dashboard', 'time-by-task-type', filters] as const,
     activity: ['dashboard', 'activity'] as const,
   },
+  ai: {
+    summary: (params?: unknown) => ['ai', 'summary', params] as const,
+  },
 }

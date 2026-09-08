@@ -16,6 +16,7 @@ import { MemberProfilePage } from '@/features/dashboard/MemberProfilePage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { UsersPage } from '@/features/users/UsersPage'
 import { ProfilePage } from '@/features/profile/ProfilePage'
+import { AiAssistantPage } from '@/features/chat/AiAssistantPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage />, errorElement: <RouteErrorBoundary /> },
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
               { path: 'dashboard', element: <TeamDashboardPage /> },
               { path: 'dashboard/members/:id', element: <MemberProfilePage /> },
               { path: 'projects', element: <ProjectsPage /> },
+              { path: 'assistant', element: <AiAssistantPage /> },
             ],
           },
           {

@@ -7,6 +7,7 @@ import {
   ListChecks,
   LogOut,
   Menu,
+  Sparkles,
   User as UserIcon,
   Users as UsersIcon,
   X,
@@ -40,6 +41,7 @@ export function AppLayout() {
     { to: '/review', label: 'Review Queue', icon: ListChecks, show: isManagerOrAdmin },
     { to: '/dashboard', label: 'Team Dashboard', icon: LayoutDashboard, show: isManagerOrAdmin },
     { to: '/projects', label: 'Projects', icon: FolderKanban, show: isManagerOrAdmin },
+    { to: '/assistant', label: 'AI Assistant', icon: Sparkles, show: isManagerOrAdmin },
     { to: '/users', label: 'Users', icon: UsersIcon, show: isAdmin },
   ].filter((item) => item.show)
 

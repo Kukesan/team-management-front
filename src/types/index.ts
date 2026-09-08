@@ -301,6 +301,20 @@ export interface ChatMessage {
   createdAt: string
 }
 
+/** Raw shape from POST /ai/chat. Tool names the model called while answering (e.g. "get_reports"). */
+export interface ChatResponse {
+  answer: string
+  toolsUsed: string[]
+}
+
+/** Raw shape from GET /ai/summary. */
+export interface SummaryResponse {
+  summaryMarkdown: string
+  weekStart: string
+  projectId: string | null
+  generatedAt: string
+}
+
 export interface ApiError {
   message: string
   status: number
