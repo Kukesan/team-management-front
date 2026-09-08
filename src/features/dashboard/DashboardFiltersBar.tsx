@@ -1,21 +1,29 @@
 import { useQuery } from '@tanstack/react-query'
-import { projectsApi } from '@/api/projects'
 import { usersApi } from '@/api/users'
+import { projectsApi } from '@/api/projects'
 import { queryKeys } from '@/lib/queryClient'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { ReportStatus } from '@/types'
 
+export type SubmissionStatusFilter = ReportStatus | 'NotStarted'
+
+const STATUS_OPTIONS: { value: SubmissionStatusFilter; label: string }[] = [
+  { value: 'Draft', label: 'Draft' },
+  { value: 'Submitted', label: 'Submitted' },
+  { value: 'NeedsCorrection', label: 'Needs Correction' },
+  { value: 'Approved', label: 'Approved' },
+  { value: 'NotStarted', label: 'Not started' },
+]
+
 export interface DashboardFilterState {
   weekStartDate: string
   weekEndDate: string
   userId: string
   projectId: string
-  status: string
+  status: SubmissionStatusFilter | 'all'
 }
-
-const STATUS_OPTIONS: ReportStatus[] = ['Draft', 'Submitted', 'NeedsCorrection', 'Approved']
 
 export function DashboardFiltersBar({
   filters,
@@ -24,10 +32,10 @@ export function DashboardFiltersBar({
   filters: DashboardFilterState
   onChange: (next: DashboardFilterState) => void
 }) {
-  const { data: projects } = useQuery({ queryKey: queryKeys.projects.list, queryFn: projectsApi.list })
   // ASSUMPTION: GET /users is readable by Manager (not just Admin) so the dashboard can list team
   // members for filtering; the Admin-only restriction in the UI applies to the CRUD management page.
   const { data: users } = useQuery({ queryKey: queryKeys.users.list, queryFn: usersApi.list })
+  const { data: projects } = useQuery({ queryKey: queryKeys.projects.list, queryFn: projectsApi.list })
 
   const set = <K extends keyof DashboardFilterState>(key: K, value: DashboardFilterState[K]) =>
     onChange({ ...filters, [key]: value })
@@ -80,16 +88,16 @@ export function DashboardFiltersBar({
       </div>
 
       <div className="space-y-1">
-        <Label className="text-xs">Status</Label>
-        <Select value={filters.status} onValueChange={(v) => set('status', v)}>
-          <SelectTrigger className="w-40">
+        <Label className="text-xs">Submission status</Label>
+        <Select value={filters.status} onValueChange={(v) => set('status', v as DashboardFilterState['status'])}>
+          <SelectTrigger className="w-44">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             {STATUS_OPTIONS.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
+              <SelectItem key={s.value} value={s.value}>
+                {s.label}
               </SelectItem>
             ))}
           </SelectContent>

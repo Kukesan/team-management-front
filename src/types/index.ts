@@ -237,57 +237,61 @@ export interface ReviewActionRequest {
 }
 
 export interface DashboardSummary {
-  submittedThisWeek: number
-  totalTeamMembers: number
-  complianceRate: number
+  weekStartDate: string
+  totalSubmitted: number
+  complianceRatePercent: number
   needsCorrectionCount: number
   openBlockersCount: number
 }
 
+/** Raw shape from GET /dashboard/tasks-trend. Field names already match what TrendChart needs. */
 export interface TrendPoint {
   weekStartDate: string
-  userId?: string
-  userName?: string
-  tasksCompleted: number
+  completedTaskCount: number
 }
 
-export interface StatusByMember {
+/**
+ * Raw shape from GET /dashboard/status-by-member: one row per member holding their
+ * individual reports for the week, not pre-aggregated status counts. Mapped down to
+ * StatusByMember (per-status counts) in src/api/dashboard.ts.
+ */
+export interface StatusByMemberResponse {
   userId: string
-  userName: string
-  draft: number
-  submitted: number
-  needsCorrection: number
-  approved: number
+  userFullName: string
+  weekStartDate: string
+  reports: { projectId: string; projectName: string; status: ReportStatus }[]
 }
 
 export interface WorkloadByProject {
   projectId: string
   projectName: string
+  totalHours: number
   taskCount: number
 }
 
 export interface TimeByTaskType {
   taskType: TaskType
-  hours: number
+  totalHours: number
+}
+
+/** Raw shape from GET /dashboard/activity-feed items. Mapped to ActivityItem in src/api/dashboard.ts. */
+export interface ActivityFeedItemResponse {
+  type: 'Submission' | 'Review'
+  timestamp: string
+  reportId: string
+  projectId: string
+  projectName: string
+  actorFullName: string
+  detail: string | null
 }
 
 export interface ActivityItem {
   id: string
-  type: 'Submission' | 'Approval' | 'RequestChanges'
+  type: 'Submission' | 'Review'
   userName: string
   projectName: string
   message: string
   createdAt: string
-}
-
-export interface MemberStats {
-  userId: string
-  userName: string
-  email: string
-  averageCompliance: number
-  approvedCount: number
-  needsCorrectionCount: number
-  commonBlockers: string[]
 }
 
 export interface ChatMessage {

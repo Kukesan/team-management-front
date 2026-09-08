@@ -2,23 +2,22 @@ import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { endOfWeek, format, startOfWeek, subWeeks } from 'date-fns'
 import { dashboardApi } from '@/api/dashboard'
+import { reportsApi } from '@/api/reports'
+import { usersApi } from '@/api/users'
 import { queryKeys } from '@/lib/queryClient'
 import { DashboardFiltersBar, type DashboardFilterState } from '@/features/dashboard/DashboardFiltersBar'
-import { SummaryCards } from '@/features/dashboard/SummaryCards'
-import { TrendChart } from '@/features/dashboard/TrendChart'
-import { StatusByMemberChart } from '@/features/dashboard/StatusByMemberChart'
-import { WorkloadChart } from '@/features/dashboard/WorkloadChart'
-import { TimeByTaskTypeChart } from '@/features/dashboard/TimeByTaskTypeChart'
-import { ActivityFeed } from '@/features/dashboard/ActivityFeed'
-import { TeamMembersCard } from '@/features/dashboard/TeamMembersCard'
+import { SubmissionStatusTracker } from '@/features/dashboard/SubmissionStatusTracker'
+import { TeamReportsTable } from '@/features/dashboard/TeamReportsTable'
+import { SectionCompareView } from '@/features/dashboard/SectionCompareView'
+import type { ReportStatus } from '@/types'
 
-function toApiFilters(f: DashboardFilterState) {
+function toReportListParams(f: DashboardFilterState) {
   return {
     weekStartDate: f.weekStartDate || undefined,
     weekEndDate: f.weekEndDate || undefined,
     userId: f.userId === 'all' ? undefined : f.userId,
     projectId: f.projectId === 'all' ? undefined : f.projectId,
-    status: f.status === 'all' ? undefined : f.status,
+    status: f.status === 'all' || f.status === 'NotStarted' ? undefined : (f.status as ReportStatus),
   }
 }
 
@@ -31,55 +30,47 @@ export function TeamDashboardPage() {
     status: 'all',
   }))
 
-  const apiFilters = useMemo(() => toApiFilters(filters), [filters])
+  const reportParams = useMemo(() => toReportListParams(filters), [filters])
 
-  const summaryQuery = useQuery({
-    queryKey: queryKeys.dashboard.summary(apiFilters),
-    queryFn: () => dashboardApi.summary(apiFilters),
+  const usersQuery = useQuery({ queryKey: queryKeys.users.list, queryFn: usersApi.list })
+  const teamMembers = useMemo(() => usersQuery.data?.filter((u) => u.role === 'TeamMember') ?? [], [usersQuery.data])
+  const visibleMembers = useMemo(
+    () => (filters.userId === 'all' ? teamMembers : teamMembers.filter((m) => m.id === filters.userId)),
+    [teamMembers, filters.userId],
+  )
+
+  // Submission status tracking is scoped to a single week (the range's start date), matching
+  // the /dashboard/status-by-member endpoint's single-week contract.
+  const statusByMemberQuery = useQuery({
+    queryKey: queryKeys.dashboard.statusByMember({ weekStartDate: filters.weekStartDate }),
+    queryFn: () => dashboardApi.statusByMember({ weekStartDate: filters.weekStartDate }),
   })
-  const trendQuery = useQuery({
-    queryKey: queryKeys.dashboard.trend(apiFilters),
-    queryFn: () => dashboardApi.completionTrend(apiFilters),
-  })
-  const statusQuery = useQuery({
-    queryKey: queryKeys.dashboard.statusByMember(apiFilters),
-    queryFn: () => dashboardApi.statusByMember(apiFilters),
-  })
-  const workloadQuery = useQuery({
-    queryKey: queryKeys.dashboard.workloadByProject(apiFilters),
-    queryFn: () => dashboardApi.workloadByProject(apiFilters),
-  })
-  const timeByTypeQuery = useQuery({
-    queryKey: queryKeys.dashboard.timeByTaskType(apiFilters),
-    queryFn: () => dashboardApi.timeByTaskType(apiFilters),
-  })
-  const activityQuery = useQuery({
-    queryKey: queryKeys.dashboard.activity(apiFilters),
-    queryFn: () => dashboardApi.activity(apiFilters),
+
+  const reportsQuery = useQuery({
+    queryKey: queryKeys.reports.team(reportParams),
+    queryFn: () => reportsApi.listTeam(reportParams),
   })
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-slate-900">Team Dashboard</h1>
-        <p className="text-sm text-slate-500">Overview of your team's weekly reporting.</p>
+        <p className="text-sm text-slate-500">Review your team's weekly reports and submission status.</p>
       </div>
 
       <DashboardFiltersBar filters={filters} onChange={setFilters} />
 
-      <SummaryCards summary={summaryQuery.data} isLoading={summaryQuery.isLoading} />
+      <SubmissionStatusTracker
+        members={visibleMembers}
+        statusRows={statusByMemberQuery.data}
+        isLoading={usersQuery.isLoading || statusByMemberQuery.isLoading}
+        projectId={filters.projectId}
+        statusFilter={filters.status}
+      />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <TrendChart data={trendQuery.data} isLoading={trendQuery.isLoading} />
-        <StatusByMemberChart data={statusQuery.data} isLoading={statusQuery.isLoading} />
-        <WorkloadChart data={workloadQuery.data} isLoading={workloadQuery.isLoading} />
-        <TimeByTaskTypeChart data={timeByTypeQuery.data} isLoading={timeByTypeQuery.isLoading} />
-      </div>
+      <TeamReportsTable reports={reportsQuery.data} isLoading={reportsQuery.isLoading} />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        <TeamMembersCard data={statusQuery.data} isLoading={statusQuery.isLoading} />
-        <ActivityFeed items={activityQuery.data} isLoading={activityQuery.isLoading} />
-      </div>
+      <SectionCompareView reports={reportsQuery.data} isLoading={reportsQuery.isLoading} />
     </div>
   )
 }

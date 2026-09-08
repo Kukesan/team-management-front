@@ -36,7 +36,6 @@ export const queryKeys = {
     statusByMember: (filters?: unknown) => ['dashboard', 'status-by-member', filters] as const,
     workloadByProject: (filters?: unknown) => ['dashboard', 'workload-by-project', filters] as const,
     timeByTaskType: (filters?: unknown) => ['dashboard', 'time-by-task-type', filters] as const,
-    activity: (filters?: unknown) => ['dashboard', 'activity', filters] as const,
-    memberStats: (userId: string) => ['dashboard', 'member-stats', userId] as const,
+    activity: ['dashboard', 'activity'] as const,
   },
 }

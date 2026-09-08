@@ -15,6 +15,10 @@ export interface ListReportsParams {
   status?: ReportStatus
   projectId?: string
   userId?: string
+  // ASSUMPTION: /reports accepts weekStartDate/weekEndDate as an inclusive range filter,
+  // mirroring the range shape already used by the /dashboard/* endpoints.
+  weekStartDate?: string
+  weekEndDate?: string
   page?: number
   pageSize?: number
 }
