@@ -20,6 +20,20 @@ export interface User {
 }
 
 /**
+ * Shape actually returned by GET/PATCH endpoints under /users: `fullName` instead
+ * of `name`, and `roles` as an array instead of a single `role` — same mismatch as
+ * AuthUserResponse above. Mapped to `User` in src/api/users.ts.
+ */
+export interface UserListItemResponse {
+  id: string
+  fullName: string
+  email: string
+  roles: Role[]
+  isActive: boolean
+  createdAt: string
+}
+
+/**
  * Shape actually returned by /auth/login and /auth/register: `fullName`
  * instead of `name`, and `roles` as an array instead of a single `role`.
  * Mapped to `User` in src/api/auth.ts before it touches the rest of the app.
@@ -48,12 +62,29 @@ export interface RegisterRequest {
   password: string
 }
 
+export interface UpdateProfileRequest {
+  fullName: string
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+}
+
+export interface ProjectMember {
+  userId: string
+  fullName: string
+  email: string
+  assignedAt: string
+}
+
 export interface Project {
   id: string
   name: string
   description: string | null
   isActive: boolean
   createdAt: string
+  assignedUsers: ProjectMember[]
 }
 
 export type ReportStatus = 'Draft' | 'Submitted' | 'NeedsCorrection' | 'Approved'

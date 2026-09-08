@@ -15,6 +15,7 @@ import { TeamDashboardPage } from '@/features/dashboard/TeamDashboardPage'
 import { MemberProfilePage } from '@/features/dashboard/MemberProfilePage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
 import { UsersPage } from '@/features/users/UsersPage'
+import { ProfilePage } from '@/features/profile/ProfilePage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage />, errorElement: <RouteErrorBoundary /> },
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
         errorElement: <RouteErrorBoundary />,
         children: [
           { index: true, element: <HomeRedirect /> },
+          { path: 'profile', element: <ProfilePage /> },
           { path: 'reports', element: <ReportHistoryPage /> },
           { path: 'reports/new', element: <ReportFormPage /> },
           { path: 'reports/:id/edit', element: <ReportFormPage /> },

@@ -21,4 +21,10 @@ export const projectsApi = {
     http.put<Project>(`/projects/${id}`, body).then((r) => r.data),
 
   remove: (id: string) => http.delete<void>(`/projects/${id}`).then((r) => r.data),
+
+  assignMembers: (projectId: string, userIds: string[]) =>
+    http.post(`/projects/${projectId}/assign-bulk`, { userIds }).then((r) => r.data),
+
+  unassignMembers: (projectId: string, userIds: string[]) =>
+    http.post<void>(`/projects/${projectId}/unassign-bulk`, { userIds }).then((r) => r.data),
 }

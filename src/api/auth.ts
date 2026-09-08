@@ -1,5 +1,14 @@
 import { http } from '@/lib/http'
-import type { AuthResponse, AuthUserResponse, LoginRequest, RegisterRequest, Role, User } from '@/types'
+import type {
+  AuthResponse,
+  AuthUserResponse,
+  ChangePasswordRequest,
+  LoginRequest,
+  RegisterRequest,
+  Role,
+  UpdateProfileRequest,
+  User,
+} from '@/types'
 
 const ROLE_PRIORITY: Role[] = ['Admin', 'Manager', 'TeamMember']
 
@@ -28,4 +37,13 @@ export const authApi = {
     http.post<AuthResponse>('/auth/register', body).then((r) => mapLoginResponse(r.data)),
 
   me: () => http.get<AuthUserResponse>('/auth/me').then((r) => mapAuthUser(r.data)),
+
+  // ASSUMPTION: no endpoint spec was given for self-service profile/password
+  // updates; guessed as PATCH /auth/me and POST /auth/change-password to
+  // mirror the existing /auth/me and /auth/login conventions above.
+  updateProfile: (body: UpdateProfileRequest) =>
+    http.patch<AuthUserResponse>('/auth/me', body).then((r) => mapAuthUser(r.data)),
+
+  changePassword: (body: ChangePasswordRequest) =>
+    http.post<void>('/auth/change-password', body).then((r) => r.data),
 }

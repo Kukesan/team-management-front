@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/EmptyState'
+import { ManageMembersDialog } from '@/features/projects/ManageMembersDialog'
 import {
   Dialog,
   DialogContent,
@@ -96,6 +97,7 @@ export function ProjectsPage() {
                 <th className="px-4 py-2.5">Name</th>
                 <th className="px-4 py-2.5">Description</th>
                 <th className="px-4 py-2.5">Status</th>
+                <th className="px-4 py-2.5">Members</th>
                 <th className="w-32 px-4 py-2.5" />
               </tr>
             </thead>
@@ -123,6 +125,7 @@ export function ProjectsPage() {
                       onCheckedChange={(v) => setDraft((d) => ({ ...d, isActive: v }))}
                     />
                   </td>
+                  <td className="px-4 py-2 text-slate-400">—</td>
                   <td className="px-4 py-2 text-right">
                     <div className="flex justify-end gap-1">
                       <Button
@@ -171,6 +174,9 @@ export function ProjectsPage() {
                         onCheckedChange={(v) => setEditDraft((d) => ({ ...d, isActive: v }))}
                       />
                     </td>
+                    <td className="px-4 py-2">
+                      <ManageMembersDialog project={project} />
+                    </td>
                     <td className="px-4 py-2 text-right">
                       <div className="flex justify-end gap-1">
                         <Button
@@ -197,8 +203,25 @@ export function ProjectsPage() {
                         {project.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </td>
+                    <td className="px-4 py-3">
+                      {project.assignedUsers.length === 0 ? (
+                        <span className="text-sm text-slate-400">Unassigned</span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {project.assignedUsers.slice(0, 3).map((member) => (
+                            <Badge key={member.userId} variant="brand">
+                              {member.fullName}
+                            </Badge>
+                          ))}
+                          {project.assignedUsers.length > 3 && (
+                            <Badge variant="outline">+{project.assignedUsers.length - 3} more</Badge>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">
+                        <ManageMembersDialog project={project} />
                         <Button size="icon" variant="ghost" onClick={() => startEdit(project)} aria-label="Edit">
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -218,7 +241,7 @@ export function ProjectsPage() {
 
               {!creating && !projects?.length && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8">
+                  <td colSpan={5} className="px-4 py-8">
                     <EmptyState title="No projects yet" description="Add your first project to get started." />
                   </td>
                 </tr>

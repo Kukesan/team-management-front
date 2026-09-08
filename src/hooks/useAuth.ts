@@ -8,6 +8,7 @@ export function useAuth() {
   const token = useAuthStore((s) => s.token)
   const user = useAuthStore((s) => s.user)
   const setSession = useAuthStore((s) => s.setSession)
+  const updateUser = useAuthStore((s) => s.updateUser)
   const clearSession = useAuthStore((s) => s.clearSession)
   const navigate = useNavigate()
 
@@ -42,6 +43,7 @@ export function useAuth() {
     login,
     register,
     logout,
+    updateUser,
   }
 }
 

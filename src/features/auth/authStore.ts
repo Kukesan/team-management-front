@@ -17,6 +17,7 @@ interface AuthState {
   token: string | null
   user: User | null
   setSession: (token: string, user: User) => void
+  updateUser: (user: User) => void
   clearSession: () => void
 }
 
@@ -26,6 +27,7 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       user: null,
       setSession: (token, user) => set({ token, user }),
+      updateUser: (user) => set({ user }),
       clearSession: () => set({ token: null, user: null }),
     }),
     { name: 'wr-auth' },

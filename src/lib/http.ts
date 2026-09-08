@@ -31,13 +31,13 @@ http.interceptors.response.use(
       }
     }
 
+    // Backend's ApiErrorResponse shape is { title, status, errors } (see
+    // ExceptionHandlingMiddleware/ValidationFilter), not { message }.
+    const data = error.response?.data as { title?: string; message?: string; errors?: Record<string, string[]> } | undefined
     const apiError: ApiError = {
-      message:
-        (error.response?.data as { message?: string } | undefined)?.message ??
-        error.message ??
-        'Something went wrong',
+      message: data?.title ?? data?.message ?? error.message ?? 'Something went wrong',
       status: error.response?.status ?? 0,
-      errors: (error.response?.data as { errors?: Record<string, string[]> } | undefined)?.errors,
+      errors: data?.errors,
     }
 
     return Promise.reject(apiError)
