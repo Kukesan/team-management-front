@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
+  BarChart3,
   ClipboardList,
   FolderKanban,
   LayoutDashboard,
@@ -39,6 +40,7 @@ export function AppLayout() {
 
   const navItems: NavItem[] = [
     { to: '/reports', label: 'My Reports', icon: ClipboardList, show: true },
+    { to: '/insights', label: 'Insights', icon: BarChart3, show: isManagerOrAdmin },
     { to: '/review', label: 'Review Queue', icon: ListChecks, show: isManagerOrAdmin },
     { to: '/dashboard', label: 'Team Dashboard', icon: LayoutDashboard, show: isManagerOrAdmin },
     { to: '/projects', label: 'Projects', icon: FolderKanban, show: isManagerOrAdmin },

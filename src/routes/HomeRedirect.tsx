@@ -3,5 +3,5 @@ import { useRole } from '@/hooks/useAuth'
 
 export function HomeRedirect() {
   const { isManagerOrAdmin } = useRole()
-  return <Navigate to={isManagerOrAdmin ? '/dashboard' : '/reports'} replace />
+  return <Navigate to={isManagerOrAdmin ? '/insights' : '/reports'} replace />
 }

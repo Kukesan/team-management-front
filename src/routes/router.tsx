@@ -11,6 +11,7 @@ import { ReportFormPage } from '@/features/reports/ReportFormPage'
 import { ReportDetailPage } from '@/features/reports/ReportDetailPage'
 import { ReviewQueuePage } from '@/features/review/ReviewQueuePage'
 import { ManagerReviewPage } from '@/features/review/ManagerReviewPage'
+import { InsightsDashboardPage } from '@/features/insights/InsightsDashboardPage'
 import { TeamDashboardPage } from '@/features/dashboard/TeamDashboardPage'
 import { MemberProfilePage } from '@/features/dashboard/MemberProfilePage'
 import { ProjectsPage } from '@/features/projects/ProjectsPage'
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
           {
             element: <RoleRoute allow={['Manager', 'Admin']} />,
             children: [
+              { path: 'insights', element: <InsightsDashboardPage /> },
               { path: 'review', element: <ReviewQueuePage /> },
               { path: 'review/:id', element: <ManagerReviewPage /> },
               { path: 'dashboard', element: <TeamDashboardPage /> },
