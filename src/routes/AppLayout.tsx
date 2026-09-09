@@ -39,12 +39,12 @@ export function AppLayout() {
   const navigate = useNavigate()
 
   const navItems: NavItem[] = [
-    { to: '/reports', label: 'My Reports', icon: ClipboardList, show: true },
     { to: '/insights', label: 'Insights', icon: BarChart3, show: isManagerOrAdmin },
+    { to: '/reports', label: 'My Reports', icon: ClipboardList, show: true },
     { to: '/review', label: 'Review Queue', icon: ListChecks, show: isManagerOrAdmin },
     { to: '/dashboard', label: 'Team Dashboard', icon: LayoutDashboard, show: isManagerOrAdmin },
     { to: '/projects', label: 'Projects', icon: FolderKanban, show: isManagerOrAdmin },
-    { to: '/assistant', label: 'AI Assistant', icon: Sparkles, show: isManagerOrAdmin },
+    { to: '/assistant', label: 'Ask AI', icon: Sparkles, show: isManagerOrAdmin },
     { to: '/users', label: 'Users', icon: UsersIcon, show: isAdmin },
   ].filter((item) => item.show)
 
