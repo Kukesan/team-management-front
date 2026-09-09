@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -42,18 +43,22 @@ function toFormValues(report: WeeklyReport): ReportFormValues {
     weekStartDate: report.weekStartDate.slice(0, 10),
     weekEndDate: report.weekEndDate.slice(0, 10),
     tasks: (report.taskItems ?? []).map((t) => ({ ...t, output: t.output ?? '' })),
+    nextWeekTasks: (report.nextWeekTasks ?? []).map((t) => ({ ...t, description: t.description ?? '' })),
     blockers: (report.blockers ?? []).map((b) => ({ ...b, description: b.description ?? '' })),
     achievements: (report.achievements ?? []).map((a) => ({ ...a, description: a.description ?? '' })),
     hoursBreakdown: report.hoursBreakdown ?? [],
+    notes: report.notes ?? '',
   }
 }
 
 function toUpdateRequest(values: ReportFormValues): UpdateReportRequest {
   return {
     taskItems: values.tasks.map(({ id: _id, ...rest }) => rest),
+    nextWeekTasks: values.nextWeekTasks.map(({ id: _id, ...rest }) => rest),
     blockers: values.blockers.map(({ id: _id, ...rest }) => rest),
     achievements: values.achievements.map(({ id: _id, ...rest }) => rest),
     hoursBreakdown: values.hoursBreakdown.map(({ id: _id, ...rest }) => rest),
+    notes: values.notes.trim() === '' ? null : values.notes,
   }
 }
 
@@ -101,6 +106,7 @@ export function ReportFormPage() {
   }, [report, reset])
 
   const tasksArray = useFieldArray({ control, name: 'tasks' })
+  const nextWeekTasksArray = useFieldArray({ control, name: 'nextWeekTasks' })
   const blockersArray = useFieldArray({ control, name: 'blockers' })
   const achievementsArray = useFieldArray({ control, name: 'achievements' })
   const hoursArray = useFieldArray({ control, name: 'hoursBreakdown' })
@@ -377,6 +383,24 @@ export function ReportFormPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Tasks planned for next week</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RepeatableList
+              ids={nextWeekTasksArray.fields.map((f) => f.id)}
+              onAdd={() => nextWeekTasksArray.append({ id: crypto.randomUUID(), description: '' })}
+              onRemove={(i) => nextWeekTasksArray.remove(i)}
+              addLabel="Add planned task"
+              emptyHint="No tasks planned for next week yet."
+              renderItem={(i) => (
+                <Input {...register(`nextWeekTasks.${i}.description`)} placeholder="Describe the planned task" />
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Blockers / challenges</CardTitle>
           </CardHeader>
           <CardContent>
@@ -482,6 +506,19 @@ export function ReportFormPage() {
               )}
             />
             <HoursBreakdownChart entries={hoursBreakdown} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Notes (optional)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              {...register('notes')}
+              rows={3}
+              placeholder="Any additional notes or links relevant to this week's report"
+            />
           </CardContent>
         </Card>
       </fieldset>

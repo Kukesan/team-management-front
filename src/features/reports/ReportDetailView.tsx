@@ -92,6 +92,23 @@ export function ReportDetailView({ report }: { report: WeeklyReport }) {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Tasks planned for next week</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(report.nextWeekTasks ?? []).length === 0 ? (
+            <p className="text-sm text-slate-400">No tasks planned yet.</p>
+          ) : (
+            <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {(report.nextWeekTasks ?? []).map((t) => (
+                <li key={t.id}>{t.description}</li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -144,6 +161,17 @@ export function ReportDetailView({ report }: { report: WeeklyReport }) {
           </CardContent>
         </Card>
       </div>
+
+      {report.notes && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap text-sm text-slate-700">{report.notes}</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

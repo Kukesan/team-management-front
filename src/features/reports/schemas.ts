@@ -12,6 +12,11 @@ export const taskSchema = z.object({
   output: z.string(),
 })
 
+export const nextWeekTaskSchema = z.object({
+  id: z.string(),
+  description: z.string().min(1, 'Required'),
+})
+
 export const blockerSchema = z.object({
   id: z.string(),
   description: z.string().min(1, 'Required'),
@@ -45,9 +50,11 @@ export const reportFormSchema = z.object({
   weekStartDate: z.string().min(1, 'Required'),
   weekEndDate: z.string().min(1, 'Required'),
   tasks: z.array(taskSchema).min(1, 'Add at least one task'),
+  nextWeekTasks: z.array(nextWeekTaskSchema),
   blockers: z.array(blockerSchema),
   achievements: z.array(achievementSchema),
   hoursBreakdown: z.array(hoursBreakdownSchema),
+  notes: z.string(),
 })
 
 export type ReportFormValues = z.infer<typeof reportFormSchema>
@@ -70,8 +77,10 @@ export function emptyReportForm(weekStartDate: string, weekEndDate: string): Rep
         output: '',
       },
     ],
+    nextWeekTasks: [],
     blockers: [],
     achievements: [],
     hoursBreakdown: [],
+    notes: '',
   }
 }

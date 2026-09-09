@@ -140,6 +140,15 @@ export interface AchievementRequest {
   isKeyAchievement: boolean
 }
 
+export interface NextWeekTaskItem {
+  id: string
+  description: string
+}
+
+export interface NextWeekTaskRequest {
+  description: string
+}
+
 export type TaskType =
   | 'Development'
   | 'Testing'
@@ -181,9 +190,11 @@ export interface ReportVersionSummary {
 
 export interface ReportVersionDetail extends ReportVersionSummary {
   taskItems: ReportTask[]
+  nextWeekTasks: NextWeekTaskItem[]
   blockers: BlockerItem[]
   achievements: AchievementItem[]
   hoursBreakdown: HoursBreakdownItem[]
+  notes: string | null
 }
 
 export interface WeeklyReport {
@@ -199,9 +210,11 @@ export interface WeeklyReport {
   createdAt: string
   updatedAt: string
   taskItems: ReportTask[]
+  nextWeekTasks: NextWeekTaskItem[]
   blockers: BlockerItem[]
   achievements: AchievementItem[]
   hoursBreakdown: HoursBreakdownItem[]
+  notes: string | null
   reviews: ReportReview[]
 }
 
@@ -226,9 +239,11 @@ export interface CreateReportRequest {
 
 export interface UpdateReportRequest {
   taskItems: TaskItemRequest[]
+  nextWeekTasks: NextWeekTaskRequest[]
   blockers: BlockerRequest[]
   achievements: AchievementRequest[]
   hoursBreakdown: HoursBreakdownRequest[]
+  notes: string | null
 }
 
 export interface ReviewActionRequest {
