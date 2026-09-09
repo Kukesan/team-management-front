@@ -7,6 +7,9 @@ Applies to every signed-in user: TeamMember, Manager, and Admin.
 - Go to `/login` and enter your email and password.
 - New accounts are created by an Admin inviting you (see `admin.md`) — there's a self-serve `/register` page
   too, but normal onboarding is via invite.
+- Locked out or forgot your password? There's no self-service reset yet — ask an Admin to reset it for you
+  (Admin → Users → the key icon on your row). They'll share a new temporary password with you directly; change
+  it afterward from Profile → "Change password".
 - If your session expires or your token becomes invalid, the app automatically signs you out and returns you
   to the login page.
 

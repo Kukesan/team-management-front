@@ -7,6 +7,22 @@ export interface InviteUserRequest {
   role: Role
 }
 
+/** Raw shape from POST /users/invite: UserListItemResponse plus a one-time temporary
+ * password (see InvitedUserDto on the backend — there's no email-invite infrastructure,
+ * so the account is created immediately with a generated password instead). */
+export interface InvitedUserResponse extends UserListItemResponse {
+  temporaryPassword: string
+}
+
+export interface InvitedUser extends User {
+  temporaryPassword: string
+}
+
+export interface PasswordResetResultResponse {
+  userId: string
+  temporaryPassword: string
+}
+
 const ROLE_PRIORITY: Role[] = ['Admin', 'Manager', 'TeamMember']
 
 /** Backend returns `fullName` + `roles[]`; the app works with `name` + a single `role`. */
@@ -30,7 +46,15 @@ export const usersApi = {
       (Array.isArray(r.data) ? r.data : r.data.items).map(mapUser),
     ),
 
-  invite: (body: InviteUserRequest) => http.post<User>('/users/invite', body).then((r) => r.data),
+  // Backend's InviteUserRequest is { fullName, email, role } — map at the boundary like
+  // every other user-shaped request/response (see mapUser above).
+  invite: (body: InviteUserRequest) =>
+    http
+      .post<InvitedUserResponse>('/users/invite', { fullName: body.name, email: body.email, role: body.role })
+      .then((r) => ({ ...mapUser(r.data), temporaryPassword: r.data.temporaryPassword }) satisfies InvitedUser),
+
+  resetPassword: (id: string) =>
+    http.post<PasswordResetResultResponse>(`/users/${id}/reset-password`).then((r) => r.data),
 
   changeRole: (id: string, role: Role) =>
     http.post<UserListItemResponse>(`/users/${id}/role`, { role }).then((r) => mapUser(r.data)),

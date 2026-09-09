@@ -14,10 +14,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Assumption: ASP.NET Core backend runs on https://localhost:5001 (see src/lib/http.ts).
-      // Adjust VITE_API_BASE_URL in .env instead of relying on this proxy in most cases.
+      // Matches team-management-api's own dev port (see src/Api/Properties/launchSettings.json
+      // in that repo — the "https" launch profile). Adjust VITE_API_BASE_URL in .env instead of
+      // relying on this proxy in most cases.
       '/api': {
-        target: 'https://localhost:5001',
+        target: 'https://localhost:7058',
         changeOrigin: true,
         secure: false,
       },

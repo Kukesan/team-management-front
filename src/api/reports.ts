@@ -15,8 +15,10 @@ export interface ListReportsParams {
   status?: ReportStatus
   projectId?: string
   userId?: string
-  // ASSUMPTION: /reports accepts weekStartDate/weekEndDate as an inclusive range filter,
-  // mirroring the range shape already used by the /dashboard/* endpoints.
+  // Range filter used by the caller-facing filter UI. listMine's backend endpoint (GET
+  // /reports/mine, ManagerReportsQueryParameters's sibling MyReportsQueryParameters) only
+  // supports a single WeekStartDate, so weekEndDate is ignored there — see listMine below.
+  // listTeam maps both onto the backend's dateFrom/dateTo range filter.
   weekStartDate?: string
   weekEndDate?: string
   page?: number
@@ -24,13 +26,23 @@ export interface ListReportsParams {
 }
 
 export const reportsApi = {
-  /** Current user's own reports. */
+  /** Current user's own reports. Only weekStartDate is a real filter on this endpoint
+   * (MyReportsQueryParameters has no end-date range) — weekEndDate is accepted here for a
+   * consistent ListReportsParams shape but has no effect. */
   listMine: (params?: ListReportsParams) =>
     http.get<PagedResult<WeeklyReportSummary>>('/reports/mine', { params }).then((r) => r.data.items),
 
-  /** Manager/Admin view across the team. */
-  listTeam: (params?: ListReportsParams) =>
-    http.get<PagedResult<WeeklyReportSummary>>('/reports', { params }).then((r) => r.data.items),
+  /** Manager/Admin view across the team. weekStartDate/weekEndDate map to the backend's
+   * dateFrom/dateTo (ManagerReportsQueryParameters) — the property names differ so they
+   * can't be passed through as-is. */
+  listTeam: (params?: ListReportsParams) => {
+    const { weekStartDate, weekEndDate, ...rest } = params ?? {}
+    return http
+      .get<PagedResult<WeeklyReportSummary>>('/reports', {
+        params: { ...rest, dateFrom: weekStartDate, dateTo: weekEndDate },
+      })
+      .then((r) => r.data.items)
+  },
 
   get: (id: string) => http.get<WeeklyReport>(`/reports/${id}`).then((r) => r.data),
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Trash2 } from 'lucide-react'
-import { usersApi } from '@/api/users'
+import { Check, Copy, KeyRound, Trash2 } from 'lucide-react'
+import { usersApi, type PasswordResetResultResponse } from '@/api/users'
 import { queryKeys } from '@/lib/queryClient'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
@@ -29,6 +29,8 @@ export function UsersPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
+  const [resetResult, setResetResult] = useState<PasswordResetResultResponse | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const { data: users, isLoading } = useQuery({ queryKey: queryKeys.users.list, queryFn: usersApi.list })
 
@@ -52,6 +54,24 @@ export function UsersPage() {
     },
     onError: (err: ApiError) => toast({ title: 'Could not remove user', description: err.message, variant: 'destructive' }),
   })
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: usersApi.resetPassword,
+    onSuccess: (result) => setResetResult(result),
+    onError: (err: ApiError) =>
+      toast({ title: 'Could not reset password', description: err.message, variant: 'destructive' }),
+  })
+
+  const copyTempPassword = async () => {
+    if (!resetResult) return
+    try {
+      await navigator.clipboard.writeText(resetResult.temporaryPassword)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Password stays visible either way — copy is a convenience, not required.
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -113,15 +133,27 @@ export function UsersPage() {
                     <Badge variant={u.isActive ? 'success' : 'default'}>{u.isActive ? 'Active' : 'Inactive'}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      disabled={u.id === currentUser?.id}
-                      onClick={() => setDeleteTarget(u)}
-                      aria-label="Remove user"
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        isLoading={resetPasswordMutation.isPending && resetPasswordMutation.variables === u.id}
+                        onClick={() => resetPasswordMutation.mutate(u.id)}
+                        aria-label="Reset password"
+                        title="Reset password"
+                      >
+                        <KeyRound className="h-4 w-4 text-slate-500" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        disabled={u.id === currentUser?.id}
+                        onClick={() => setDeleteTarget(u)}
+                        aria-label="Remove user"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -155,6 +187,30 @@ export function UsersPage() {
               onClick={() => deleteTarget && removeMutation.mutate(deleteTarget.id)}
             >
               Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(resetResult)} onOpenChange={(open) => !open && setResetResult(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Password reset</DialogTitle>
+            <DialogDescription>
+              Share this temporary password with the user directly — it won't be shown again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+            <code className="flex-1 select-all font-mono text-sm text-slate-900">
+              {resetResult?.temporaryPassword}
+            </code>
+            <Button type="button" size="icon" variant="ghost" onClick={copyTempPassword} aria-label="Copy temporary password">
+              {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={() => setResetResult(null)}>
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>
