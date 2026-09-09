@@ -315,6 +315,11 @@ export interface SummaryResponse {
   generatedAt: string
 }
 
+/** Raw shape from POST /ai/help. Unlike chat, this is a single non-agentic answer — no tools_used. */
+export interface HelpResponse {
+  answer: string
+}
+
 export interface ApiError {
   message: string
   status: number

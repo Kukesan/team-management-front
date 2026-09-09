@@ -1,5 +1,5 @@
 import { http } from '@/lib/http'
-import type { ChatResponse, SummaryResponse } from '@/types'
+import type { ChatResponse, HelpResponse, SummaryResponse } from '@/types'
 
 export interface ChatHistoryMessage {
   role: 'user' | 'assistant'
@@ -15,4 +15,8 @@ export const aiApi = {
   // week is a plain ISO date (yyyy-MM-dd); AiController binds it as [FromQuery] DateOnly week.
   summary: (week: string, projectId?: string) =>
     http.get<SummaryResponse>('/ai/summary', { params: { week, projectId } }).then((r) => r.data),
+
+  // Open to every role (unlike chat/summary) — product how-to Q&A with no DB access.
+  help: (message: string, history: ChatHistoryMessage[]) =>
+    http.post<HelpResponse>('/ai/help', { message, history }).then((r) => r.data),
 }

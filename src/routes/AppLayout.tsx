@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth, useRole } from '@/hooks/useAuth'
+import { HelpWidget } from '@/components/HelpWidget'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -140,6 +141,8 @@ export function AppLayout() {
           </div>
         </main>
       </div>
+
+      <HelpWidget />
     </div>
   )
 }
